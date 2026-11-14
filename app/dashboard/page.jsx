@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import AdminManager from './AdminManager';
 import WorkManager from './WorkManager';
+import Payroll from './Payroll';
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY);
 const sections = [
@@ -51,7 +52,7 @@ export default function Dashboard() {
       </nav>
       <section style={{gridColumn:'span 2',minWidth:0}}>
         <div style={{marginBottom:24}}><div style={{color:'#2563eb',fontSize:12,fontWeight:800,letterSpacing:1.5}}>PAYCHECKRB CLOUD</div><h1 style={{fontSize:'clamp(28px,4vw,38px)',margin:'10px 0'}}> {section==='overview'?'Bem-vindo, '+employee.name:selected.title}</h1><p style={{color:'#64748b',lineHeight:1.6}}>{selected.description}</p></div>
-        {admin&&(section==='employees'||section==='roles')?<AdminManager key={section} kind={section}/>:section==='sites'&&admin?<WorkManager kind="sites" admin={admin}/>:section==='time'?<WorkManager kind="time" admin={admin}/>:section==='overview'?<div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(190px,1fr))',gap:14}}>
+        {admin&&(section==='employees'||section==='roles')?<AdminManager key={section} kind={section}/>:section==='sites'&&admin?<WorkManager kind="sites" admin={admin}/>:section==='time'?<WorkManager kind="time" admin={admin}/>:section==='payments'&&admin?<Payroll/>:section==='overview'?<div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(190px,1fr))',gap:14}}>
           {sections.filter(s=>s.id!=='overview'&&(admin||s.id==='time')).map(item=><button key={item.id} onClick={()=>setSection(item.id)} style={{textAlign:'left',background:'#fff',border:'1px solid #e2e8f0',borderRadius:16,padding:20,cursor:'pointer',color:'#17243b'}}><div style={{fontSize:26,color:'#2563eb',marginBottom:12}}>{item.icon}</div><strong>{item.title}</strong><p style={{fontSize:13,lineHeight:1.5,color:'#64748b'}}>{item.description}</p><span style={{fontSize:12,color:'#b45309'}}>Em desenvolvimento</span></button>)}
         </div>:<div style={{background:'#fff',border:'1px solid #e2e8f0',borderRadius:18,padding:28}}><strong>Área em preparação</strong><p style={{color:'#64748b',lineHeight:1.6}}>A interface desta seção já está organizada. Os dados e operações reais serão habilitados na próxima etapa, após a validação das regras e permissões. Nenhum valor de pagamento ou hora foi inventado.</p></div>}
       </section>

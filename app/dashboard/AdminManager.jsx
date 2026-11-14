@@ -7,7 +7,7 @@ const field={width:'100%',boxSizing:'border-box',border:'1px solid #cbd5e1',bord
 const btn={border:0,borderRadius:9,padding:'11px 16px',background:'#2563eb',color:'white',cursor:'pointer',fontWeight:700};
 export default function AdminManager({kind}){
  const [data,setData]=useState({roles:[],employees:[]}),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[editing,setEditing]=useState(null);
- const [form,setForm]=useState({name:'',email:'',password:'',role_id:'',is_admin:false,hourly_rate:25,active:true});
+ const [form,setForm]=useState({name:'',email:'',password:'',role_id:'',is_admin:false,hourly_rate:25,active:true,pay_type:'hourly',daily_rate:0,pay_type:'hourly',daily_rate:0});
  async function api(action,payload){
   const {data:session}=await supabase.auth.getSession();if(!session.session)throw new Error('Sessão expirada. Entre novamente.');
   const r=await fetch('/api/admin',{method:action?'POST':'GET',headers:{Authorization:'Bearer '+session.session.access_token,...(action?{'Content-Type':'application/json'}:{})},body:action?JSON.stringify({action,payload}):undefined,cache:'no-store'});
@@ -18,12 +18,13 @@ export default function AdminManager({kind}){
  const roles=data.roles||[],employees=data.employees||[],roleMode=kind==='roles';
  function startEdit(item){setEditing(item.id);setForm({...item,password:''});setMessage('')}
  function reset(){setEditing(null);setForm({name:'',email:'',password:'',role_id:'',is_admin:false,hourly_rate:25,active:true});}
+ async function workflowPay(id,p){const {data:session}=await supabase.auth.getSession();const r=await fetch('/api/workflow',{method:'POST',headers:{Authorization:'Bearer '+session.session.access_token,'Content-Type':'application/json'},body:JSON.stringify({action:'employee_pay',payload:{id,pay_type:p.pay_type||'hourly',daily_rate:Number(p.daily_rate)||0}})});const j=await r.json();if(!r.ok)throw Error(j.error||'Erro ao salvar pagamento')}
  async function submit(e){
   e.preventDefault();setBusy(true);setMessage('');
   try{
    const action=roleMode?(editing?'role_update':'role_create'):(editing?'employee_update':'employee_create');
    await api(action,{...form,id:editing||undefined,role_id:Number(form.role_id),hourly_rate:Number(form.hourly_rate)});
-   reset();await refresh();setMessage('Alterações salvas com sucesso.');
+   if(!roleMode&&editing){await workflowPay(editing,form)}reset();await refresh();setMessage('Alterações salvas com sucesso.');
   }catch(e){setMessage(e.message)}finally{setBusy(false)}
  }
  return <div style={{display:'grid',gap:20}}>
@@ -34,6 +35,7 @@ export default function AdminManager({kind}){
     <label>Email/login<input required type="email" style={field} disabled={!!editing} value={form.email} onChange={e=>setForm({...form,email:e.target.value})}/></label>
     {!editing&&<label>Senha inicial (mínimo 8 caracteres)<input required minLength={8} type="password" autoComplete="new-password" style={field} value={form.password} onChange={e=>setForm({...form,password:e.target.value})}/></label>}
     <label>Classificação<select required style={field} value={form.role_id||''} onChange={e=>setForm({...form,role_id:e.target.value})}><option value="">Selecione</option>{roles.filter(r=>r.active||r.id===Number(form.role_id)).map(r=><option key={r.id} value={r.id}>{r.name} — {money(r.hourly_rate)}/h</option>)}</select></label>
+    {editing&&<><label>Modalidade de pagamento<select style={field} value={form.pay_type||'hourly'} onChange={e=>setForm({...form,pay_type:e.target.value})}><option value="hourly">Por hora</option><option value="daily">Por diária</option></select></label>{form.pay_type==='daily'&&<label>Valor da diária (CAD)<input type="number" min="0" step="0.01" style={field} value={form.daily_rate||0} onChange={e=>setForm({...form,daily_rate:e.target.value})}/></label>}</>}
     <label style={{display:'flex',gap:8,alignItems:'center'}}><input type="checkbox" checked={!!form.is_admin} onChange={e=>setForm({...form,is_admin:e.target.checked})}/> Administrador</label>
    </>}
    {editing&&<label style={{display:'flex',gap:8,alignItems:'center'}}><input type="checkbox" checked={!!form.active} onChange={e=>setForm({...form,active:e.target.checked})}/> Ativo</label>}
